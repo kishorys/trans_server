@@ -10,11 +10,9 @@ class PlatformRecord < ActiveRecord::Base
     last_batch_time = Time.now
     update_array = []
 
-    transactions = ActiveRecord::Base.connection.execute("select p.tuid, p.txid, t.updated_at, t.order_data, t.amount, t.response_reason_code, " +
-    "t.auth_verification_code, t.method_of_payment, t.status, t.platform_status, t.created_at, t.authorized_at, t.captured_at, " +
-    "t.venue_id, t.terminal_id, t.is_synchronous, t.mcc_code, t.ext_data as t_ext_data, r.record_id, r.items, r.monetary_data, r.ext_data as r_ext_data" +
-    " from platform_records p inner join transactions t on t.tuid = p.tuid left outer join refunded_items r on (r.tuid = p.tuid and r.platform_synced = b'0')"
-    )
+    transactions = PlatformRecord.select("platform_records.tuid, platform_records.txid, t.updated_at, t.order_data, t.amount, t.response_reason_code, t.auth_verification_code, t.method_of_payment, t.status, t.platform_status, t.created_at, t.authorized_at, t.captured_at, t.venue_id, t.terminal_id, t.is_synchronous, t.mcc_code, t.ext_data as t_ext_data, r.record_id, r.items, r.monetary_data, r.ext_data as r_ext_data")
+    .joins("INNER JOIN transactions t on t.tuid = platform_records.tuid")
+    .joins("LEFT OUTER JOIN refunded_items r on (r.tuid = platform_records.tuid and r.platform_synced = b'0')")
     update_array = transactions.collect { |t| t.as_json }
 
     send_transactions(update_array)
@@ -23,8 +21,7 @@ class PlatformRecord < ActiveRecord::Base
   end
 
   def send_transactions(update_array)
-    # platform rails url will come here
-    platform_rails_url = "http://localhost:3001"
-    response = RestClient.post("#{platform_rails_url}/batch", { transactions: update_array }.to_json, :content_type => :json, :accept => :json)
+    base_url = APP_CONFIG['platform_rails_url']
+    response = RestClient.post("#{base_url}/batch", { transactions: update_array }.to_json, :content_type => :json, :accept => :json)
   end
 end

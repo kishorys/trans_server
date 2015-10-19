@@ -1,0 +1,8 @@
+development:
+  platform_rails_url: "http:localhost:3001"
+
+test:
+  platform_rails_url: "https://secure.gopago.com"
+
+production:
+  platform_rails_url: "https://secure.gopago.com"
